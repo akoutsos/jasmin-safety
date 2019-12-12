@@ -1,0 +1,83 @@
+This repository includes the Jasmin executable jasminc.native, and the poly1305
+and chacha20 implementations. I explain at the end of this README how to
+compile the Jasmin compiler yourself, and get the poly1305 and chacha20
+implementations.
+
+
+* To check poly1305 implementations:
+    ./jasminc.native -checksafety -safetyparam "in;inlen" src/poly1305_avx.jazz 
+    ./jasminc.native -checksafety -safetyparam "in;inlen" src/poly1305_avx2.jazz
+
+  In all cases, it should find no safety violations, and return the following memory ranges:
+      *** No Safety Violation
+
+      Memory ranges:
+        mem_out: [0; 16]
+        mem_inlen: [0; 0]
+        mem_k: [0; 32]
+  
+      * Rel:
+        [|inv_inlen-mem_in>=0; -inv_inlen+18446744073709551615>=0; mem_in>=0|]
+        mem_in: [0; 18446744073709551615]
+
+* To check chacha20 implementations (the verification takes a few hours):
+    ./jasminc.native -checksafety -safetyparam "plain;len:output;len" src/chacha20_avx.jazz 
+    ./jasminc.native -checksafety -safetyparam "plain;len:output;len" src/chacha20_avx2.jazz
+
+  In all cases, it should find no safety violations, and return the following memory ranges:
+      *** No Safety Violation
+
+      Memory ranges:
+        mem_len: [0; 0]
+        mem_key: [0; 32]
+        mem_nonce: [0; 12]
+        mem_counter: [0; 0]
+        
+      * Rel:
+      [|inv_len-mem_plain>=0; -inv_len+4294967295>=0; mem_plain>=0|]
+      mem_plain: [0; 4294967295]
+      
+      
+      * Rel:
+      [|inv_len-mem_output>=0; -inv_len+4294967295>=0; mem_output>=0|]
+      mem_output: [0; 4294967295]
+
+
+
+(-----------------------------------------------------------------------------)
+** If you want to get the Jasmin source yourself, clone the libjc repo
+  url: https://github.com/tfaoliveira/libjc
+  branch: master
+  commit: a13822b
+
+  - poly1305 implementations need to be built first.
+    For avx and avx2, go in one of the directories:
+      /libjc/src/crypto_onetimeauth/poly1305/avx
+      /libjc/src/crypto_onetimeauth/poly1305/avx2
+
+    Then do:
+      make
+    to get the intermediate source file. If the compilation does not manage to
+    generate the assembly files, its not a problem. We only care about the
+    Jasmin source, which are (here) with should be called poly1305.japp
+
+  - chacha20 implementations are located in
+    /libjc/src/crypto_stream/chacha20/avx/chacha20.jazz
+    /libjc/src/crypto_stream/chacha20/avx2/chacha20.jazz
+      
+(-----------------------------------------------------------------------------)
+** To get jasmin, get the source at:
+  url: https://github.com/jasmin-lang/jasmin
+  branch: array_cast
+  commit: fd59ff38
+
+Build jasmin:      
+  cd proofs
+  make
+  cd ..
+
+  cd compiler
+  make CIL build
+  make
+
+Then copy jasminc.native to the safety repository.
